@@ -104,24 +104,32 @@ if __name__ == "__main__":
     import repaint
     
     config = repaint.load_config()
+    debug = config["debug"]
     
 
     # get clipboard data
     win32clipboard.OpenClipboard()
     data = win32clipboard.GetClipboardData()
+    if debug: 
+        print(f"Clipboard data: {data}")
     win32clipboard.CloseClipboard()
     prompt = data
     name, prompt = prompt_cleanup(prompt)
     name = gen_name_if_necesary(name, prompt)
 
     savepath = ""
-    clothes = config["clothes"]
+    clothes = config["CLOTHES"]
     if clothes != "": clothes = "wearing " + clothes
+    if debug: 
+        print(f"Name: {name}")
+        # print(f"Prompt: {prompt}")
+    
     extra = "" + clothes
     savepath = None
     High_priority = False
+    
     try:
-        threading.Thread(target=repaint.text2image, args=(prompt, "pet", name, savepath, extra, High_priority)).start()
+        # threading.Thread(target=repaint.text2image, args=(prompt, "pet", name, savepath, extra, High_priority)).start()
         
         # extra = "(giving oral), (face focus), (fellatio)" + clothes
         # threading.Thread(target=repaint.text2image, args=(prompt, "oral", name+"oral", savepath, extra, High_priority)).start()
