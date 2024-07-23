@@ -7,13 +7,173 @@ import sys
 import time
 from PIL import Image
 import xml.etree.ElementTree as ET
+import json
+
+
+def load_config():
+    with open("config.json", "r") as f:
+        return json.load(f)
+
+
+config = load_config()
+""" 
+        There is some explanation on each config, as well as example models
+        at the end of this file.
+        The api key is old and will not work, you need to get your own from 
+        piai.art. Accounts are free and you get free credits every day. Enough
+        for around 14 or so batches of 4 images
+"""
+TOKEN = config["APIKEY"]
+MODEL = config["MODEL"]
+LORAS = config["LORAS"]
+SAVEPATH = config["SAVEPATH"]
+if SAVEPATH == "none": SAVEPATH = None
+BASE_PROMPT = config["BASE_PROMPT"]
+
+def remove_background(image):
+    img = image.convert("RGBA")
+    datas = img.getdata()
+    newData = []
+    for item in datas:
+        if item[0] == 255 and item[1] == 255 and item[2] == 255:
+            newData.append((255, 255, 255, 0))
+        else:
+            newData.append(item)
+    img.putdata(newData)
+    return img
+def split_image(image):
+    width, height = image.size
+    half_width = width // 2
+    half_height = height // 2
+    return (image.crop((0, 0, half_width, half_height)),
+            image.crop((half_width, 0, width, half_height)),
+            image.crop((0, half_height, half_width, height)),
+            image.crop((half_width, half_height, width, height)))
+def batch_save(images, filenameRef, folder="./generated", test=False, savepath=None):
+
+    if savepath is not None:
+        folder = os.path.join(savepath, "generated")
+    if not os.path.exists(folder):
+        os.makedirs(folder, exist_ok=True)
+
+    if test:
+        # create blank test image
+        Image.new("RGBA", (512, 768), (255, 255, 255, 255)).save(f"{folder}/{filenameRef}.png")
+
+    for i, image in enumerate(images):
+        image.save(f"{folder}/{filenameRef[0:-4]}.tmp.png")
+        # image.save(f"{folder}/{filenameRef[0:-4]}_{i}.png")
+        os.replace(f"{folder}/{filenameRef[0:-4]}.tmp.png", f"{folder}/{filenameRef[0:-4]}_{i}.png") # save then rename to avoid partially-written files
+        # image.save(filenameRef + f"temp_{i}.png")
+    # images[0].save(filenameRef+".tmp.png")
+    # os.replace(filenameRef+".tmp.png", filenameRef) # save then rename to avoid partially-written files
+
+def text2image(text, lorakey = "general_furry", name="noname", savepath=SAVEPATH, optionalExtras = None, high_priority=True):
+    """ Lorakey options:
+        general_furry
+        behind
+        cowgirl
+        pet
+        oral
+        
+        """
+    prompt = BASE_PROMPT
+    # base1 = "Furry, posing sexy, animal, anthro, toned, breasts, cleavage, YIFF, "
+    # base1 += ", (realistic ultra details), (furred body:1.3)"
+    # base1 += choice([", (teasing: 1.3)", ", (sexy: 1.3)", ", (provocative: 1.3)", ", cute, kawaii"])
+    # base1 += ", (erotic: 1.3)"
+    
+    if "pet" in lorakey: 
+        prompt += "(Eager_pet_pose:1.6), (all fours)"
+        lorakey = "pet"
+    if "behind" in lorakey:
+        prompt += "pussy, panty pull, uncensored, tail, solo focus, ass, pussy juice, blush, looking back, imminent penetration, from behind, smile"
+        lorakey = "behind"
+        # lorakey = "pet"
+    if "cowgirl" in lorakey: 
+        prompt += "(cowgirl position:1.2), (girl on top:1.2), <lora:pose cowgirl:1>, "
+        lorakey = "cowgirl"
+    if "face" in lorakey: 
+        prompt += "Orgasm_Faces, face closeup, ahegao, "
+        lorakey = "cowgirl"
+    if "oral" in lorakey: 
+        prompt += "(Eager_pet_pose:1.2), oral, fellatio, solo focus, Orgasm_Faces, "
+        lorakey = "oral"
+    
+    if lorakey == "general_furry": lora_set =LORAS["general_furry"]
+    else:                          lora_set = {**LORAS[lorakey], **LORAS["general_furry"]}
+
+    prompt = optionalExtras + prompt
+    prompt += text
+
+    if len(prompt) > 4096: 
+        print("shortened")
+        prompt = prompt[0:4095]
+    
+    client = PixaiAPI(TOKEN)
+    
+    task = client.txt2img( prompts=prompt,
+                            size=(512, 768),
+                            priority=1000 if high_priority else 0,
+                            modelId=MODEL,
+                            lora=lora_set,
+                            
+                            steps=32, # 23
+                            batchSize=4,
+                            samplingMethod = "Euler a"
+                            )
+    while True:
+            if task.get_data():
+                image_full = Image.open(io.BytesIO(task.data))
+                image_full = remove_background(image_full)
+                images = split_image(image_full)
+                batch_save(images, f"{name}.png", savepath=savepath)
+                break
+            else:
+                time.sleep(1)
+        
+                           
+
+def main():
+    # the following will be added to all prompts
+    preamble = "1girl, Furry, animal, anthro, chest tuft, toned, breasts, cleavage, YIFF, NSFW, adult"
+    # whether to use high priority tasks, which cost more credits
+    high_priority = True
+    client = PixaiAPI(TOKEN)
+    argv = sys.argv
+    if len(argv) == 3:
+        filename = argv[1]
+        task = client.img2img(filename, preamble + argv[2],
+                              size=(512, 768),
+                              priority=1000 if high_priority else 0,
+                              modelId=MODEL,
+                              lora=loras_dict["general_furry"],
+                              strength=0.7,
+                              steps=23,
+                              batchSize=4,
+                              samplingMethod = "Euler a"
+                              )
+        while True:
+            if task.get_data():
+                image_full = Image.open(io.BytesIO(task.data))
+                image_full = remove_background(image_full)
+                images = split_image(image_full)
+                batch_save(images, filename)
+                break
+            else:
+                time.sleep(1)
+
+if __name__ == "__main__":
+    main()
+    # print("10091142_479565.png"[0:-4])
+    # print(a)
+    
 
 
 # this is an old token
 # replace this with your own token. You'll likely have to do this again from time to time
 # There should be an image on the Zip of where to get one.
-token = "eyJhbGciOiJFUzUxMiIsInR5cCI6IkpXVCJ9.eyJsZ2EiOjE3MTIyMTEyMzIsImlhdCI6MTcxMjIxMTI1MCwiZXhwIjoxNzEyODE2MDUwLCJpc3MiOiJwaXhhaSIsInN1YiI6IjE3MzI1MDY4MjQyNjUxMTc3MjIiLCJqdGkiOiIxNzMyNTA2ODI0NzI2NDkxMTY3In0.AK2kUNXq3OFrRbrewThx5a80O2LUgx223hmG3wy_Yg7bFl9YJxZ2kTJFSG0ilXSwPbDgrZV4lsjuVvpG3odiEaD6AdsZGm2dLXIjxYc_NNbJ4sCRB6l_dVFCm4D9ja1ppMi4Z5ZW0Qze66Byf8MqyoC_ykfIATUNfUfdvJicL71CoRB5"
-
+# token = "eyJhbGciOiJFUzUxMiIsInR5cCI6IkpXVCJ9.eyJsZ2EiOjE3MTIyMTEyMzIsImlhdCI6MTcxMjIxMTI1MCwiZXhwIjoxNzEyODE2MDUwLCJpc3MiOiJwaXhhaSIsInN1YiI6IjE3MzI1MDY4MjQyNjUxMTc3MjIiLCJqdGkiOiIxNzMyNTA2ODI0NzI2NDkxMTY3In0.AK2kUNXq3OFrRbrewThx5a80O2LUgx223hmG3wy_Yg7bFl9YJxZ2kTJFSG0ilXSwPbDgrZV4lsjuVvpG3odiEaD6AdsZGm2dLXIjxYc_NNbJ4sCRB6l_dVFCm4D9ja1ppMi4Z5ZW0Qze66Byf8MqyoC_ykfIATUNfUfdvJicL71CoRB5"
 
 # model url looks like pixai.art/model/12345/67890
 # use the second number which refers to the specific version of a model
@@ -39,8 +199,8 @@ lora_fur = {
     # '1657138408935748616': 0.7, # https://pixai.art/model/1657132792892036111/1657138408935748616
     '1627915097135334834': 0.7, # Bonifasko Style Furry  https://pixai.art/model/1627915094736192892/1627915097135334834
     '1682753525242443076': 0.7, # shiitakemeshi's furry art style https://pixai.art/model/1701023293348972875/1701023293369944396
+    '1610907692942825388': 0.7, # face?
     # '1701023293369944396': 0.7, # 
-    '1610907692942825388': 0.7, # 
 # ahegao https://pixai.art/model/1610907690191361905/1610907692942825388
 }
 lora_fur_back = {
@@ -98,152 +258,5 @@ loras_dict = {
     'oral': lora_fur_oral
 }
 
-
-
-
-# whether to use high priority tasks, which cost more credits
-high_priority = True
-
-def remove_background(image):
-    img = image.convert("RGBA")
-    datas = img.getdata()
-    newData = []
-    for item in datas:
-        if item[0] == 255 and item[1] == 255 and item[2] == 255:
-            newData.append((255, 255, 255, 0))
-        else:
-            newData.append(item)
-    img.putdata(newData)
-    return img
-
-def split_image(image):
-    width, height = image.size
-    half_width = width // 2
-    half_height = height // 2
-    return (image.crop((0, 0, half_width, half_height)),
-            image.crop((half_width, 0, width, half_height)),
-            image.crop((0, half_height, half_width, height)),
-            image.crop((half_width, half_height, width, height)))
-
-def batch_save(images, filenameRef, folder="./generated", test=False, savepath=None):
-
-    if savepath is not None:
-        folder = os.path.join(savepath, "generated")
-    if not os.path.exists(folder):
-        os.makedirs(folder, exist_ok=True)
-
-    if test:
-        # create blank test image
-        Image.new("RGBA", (512, 768), (255, 255, 255, 255)).save(f"{folder}/{filenameRef}.png")
-
-    for i, image in enumerate(images):
-        image.save(f"{folder}/{filenameRef[0:-4]}.tmp.png")
-        # image.save(f"{folder}/{filenameRef[0:-4]}_{i}.png")
-        os.replace(f"{folder}/{filenameRef[0:-4]}.tmp.png", f"{folder}/{filenameRef[0:-4]}_{i}.png") # save then rename to avoid partially-written files
-        # image.save(filenameRef + f"temp_{i}.png")
-    # images[0].save(filenameRef+".tmp.png")
-    # os.replace(filenameRef+".tmp.png", filenameRef) # save then rename to avoid partially-written files
-
-
-
-def text2image(text, lorakey = "general_furry", name="noname", savepath=None, optionalExtras = None, high_priority=True):
-    """ Lorakey options:
-        general_furry
-        behind
-        cowgirl
-        pet
-        oral
-        squat
-        
-        """
-    prompt = "1girl, fluffy fur, anthro, YIFF, (detailed Fur: 1.3), (furred body:1.5), toned, (NSFW:1.2), adult, chest tuff"
-    # base1 = "Furry, posing sexy, animal, anthro, toned, breasts, cleavage, YIFF, "
-    # base1 += ", (realistic ultra details), (furred body:1.3)"
-    # base1 += choice([", (teasing: 1.3)", ", (sexy: 1.3)", ", (provocative: 1.3)", ", cute, kawaii"])
-    # base1 += ", (erotic: 1.3)"
-    
-    if "pet" in lorakey: 
-        prompt += "(Eager_pet_pose:1.6), (all fours)"
-        lorakey = "pet"
-    if "behind" in lorakey:
-        prompt += "pussy, panty pull, uncensored, tail, solo focus, ass, pussy juice, blush, looking back, imminent penetration, from behind, smile"
-        lorakey = "behind"
-        # lorakey = "pet"
-    if "cowgirl" in lorakey: 
-        prompt += "(cowgirl position:1.2), (girl on top:1.2), <lora:pose cowgirl:1>, "
-        lorakey = "cowgirl"
-    if "face" in lorakey: 
-        prompt += "Orgasm_Faces, face closeup, ahegao, "
-        lorakey = "cowgirl"
-    if "squat" in lorakey: prompt += "<lora:pose squating-000006:1>, "
-    if "oral" in lorakey: 
-        prompt += "(Eager_pet_pose:1.5), 1girl, furry, breasts, furry female, oral, fellatio, nude, solo focus, Orgasm_Faces, "
-        lorakey = "oral"
-    
-    
-
-    prompt = optionalExtras + prompt
-    prompt += text
-
-    if len(text) > 4096: 
-        print("shortened")
-        text = text[0:4095]
-    
-    client = PixaiAPI(token)
-    
-    task = client.txt2img( prompts=prompt,
-                            size=(512, 768),
-                            priority=1000 if high_priority else 0,
-                            modelId=model,
-                            lora=loras_dict[lorakey],
-                            
-                            steps=32, # 23
-                            batchSize=4,
-                            samplingMethod = "Euler a"
-                            )
-    while True:
-            if task.get_data():
-                image_full = Image.open(io.BytesIO(task.data))
-                image_full = remove_background(image_full)
-                images = split_image(image_full)
-                batch_save(images, f"{name}.png", savepath=savepath)
-                break
-            else:
-                time.sleep(1)
-        
-                           
-
-def main():
-    # the following will be added to all prompts
-    preamble = "1girl, Furry, animal, anthro, chest tuft, toned, breasts, cleavage, YIFF, NSFW, adult"
-    client = PixaiAPI(token)
-    argv = sys.argv
-    if len(argv) == 3:
-        filename = argv[1]
-        task = client.img2img(filename, preamble + argv[2],
-                              size=(512, 768),
-                              priority=1000 if high_priority else 0,
-                              modelId=model,
-                              lora=loras_dict["general_furry"],
-                              strength=0.7,
-                              steps=23,
-                              batchSize=4,
-                              samplingMethod = "Euler a"
-                              )
-        while True:
-            if task.get_data():
-                image_full = Image.open(io.BytesIO(task.data))
-                image_full = remove_background(image_full)
-                images = split_image(image_full)
-                batch_save(images, filename)
-                break
-            else:
-                time.sleep(1)
-
-if __name__ == "__main__":
-    main()
-    # print("10091142_479565.png"[0:-4])
-    # print(a)
-    
 
 

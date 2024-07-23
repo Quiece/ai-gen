@@ -1,0 +1,27 @@
+{ 
+    "APIKEY": "eyJhbGciOiJFUzUxMiIsInR5cCI6IkpXVCJ9.eyJsZ2EiOjE3MTIyMTEyMzIsImlhdCI6MTcxMjIxMTI1MCwiZXhwIjoxNzEyODE2MDUwLCJpc3MiOiJwaXhhaSIsInN1YiI6IjE3MzI1MDY4MjQyNjUxMTc3MjIiLCJqdGkiOiIxNzMyNTA2ODI0NzI2NDkxMTY3In0.AK2kUNXq3OFrRbrewThx5a80O2LUgx223hmG3wy_Yg7bFl9YJxZ2kTJFSG0ilXSwPbDgrZV4lsjuVvpG3odiEaD6AdsZGm2dLXIjxYc_NNbJ4sCRB6l_dVFCm4D9ja1ppMi4Z5ZW0Qze66Byf8MqyoC_ykfIATUNfUfdvJicL71CoRB5",
+    "SAVEPATH": "none",
+    "BASE_PROMPT": "1girl, fluffy fur, anthro, YIFF, (detailed Fur: 1.3), (furred body:1.3), toned, (NSFW:1.1), adult, chest tuff, ",
+    "MODEL": "1648918127446573124",
+    "LORAS": {
+        "zoroark": {},
+        "eevee": {},
+        "general_furry": {
+            "1627915097135334834": 0.7,
+            "1682753525242443076": 0.8
+        },
+        "behind": {
+            "1647902088062905038": 0.5
+        },
+        "cowgirl": {
+            "1635121375775304614": 0.6
+        },
+        "pet": {
+            "1624371550155784504": 0.5
+        },
+        "oral": {
+            "1637587748197171654": 0.6
+        }
+    }
+
+}
