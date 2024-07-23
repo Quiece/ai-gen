@@ -102,8 +102,9 @@ if __name__ == "__main__":
     import threading
     import win32clipboard
     import repaint
-
-
+    
+    config = repaint.load_config()
+    
 
     # get clipboard data
     win32clipboard.OpenClipboard()
@@ -114,21 +115,22 @@ if __name__ == "__main__":
     name = gen_name_if_necesary(name, prompt)
 
     savepath = ""
-    clothes = ""
+    clothes = config["clothes"]
+    if clothes != "": clothes = "wearing " + clothes
     extra = "" + clothes
     savepath = None
     High_priority = False
     try:
         threading.Thread(target=repaint.text2image, args=(prompt, "pet", name, savepath, extra, High_priority)).start()
         
-        extra = "(giving oral), (face focus), (fellatio)" + clothes
-        threading.Thread(target=repaint.text2image, args=(prompt, "oral", name+"oral", savepath, extra, High_priority)).start()
+        # extra = "(giving oral), (face focus), (fellatio)" + clothes
+        # threading.Thread(target=repaint.text2image, args=(prompt, "oral", name+"oral", savepath, extra, High_priority)).start()
         
-        extra = "(ass), (from behind)" + clothes
-        threading.Thread(target=repaint.text2image, args=(prompt, "behind", name+"behind", savepath, extra, High_priority)).start()
+        # extra = "(ass), (from behind)" + clothes
+        # threading.Thread(target=repaint.text2image, args=(prompt, "behind", name+"behind", savepath, extra, High_priority)).start()
 
         extra = "(sex: 1.3), (ahegao: 1.3), ahegao, blush, rolling eyes, (orgasm: 1.2),  saliva, drooling"
-        repaint.text2image(prompt, lorakey="oral", optionalExtras=extra,  name=name+"moan", savepath=savepath)
+        repaint.text2image(prompt, lorakey="general_furry", optionalExtras=extra,  name=name+"moan", savepath=savepath)
     except Exception as e:
         print(e)
         # Should probably trigger if you don't have enough credits for high priority.
