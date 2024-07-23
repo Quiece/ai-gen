@@ -65,6 +65,7 @@ def batch_save(images, filenameRef, folder="./generated", test=False, savepath=N
         # image.save(f"{folder}/{filenameRef[0:-4]}_{i}.png")
         os.replace(f"{folder}/{filenameRef[0:-4]}.tmp.png", f"{folder}/{filenameRef[0:-4]}_{i}.png") # save then rename to avoid partially-written files
         # image.save(filenameRef + f"temp_{i}.png")
+        if config["debug"]: print(f"Saved as: {folder}/{filenameRef[0:-4]}_{i}.png")
     # images[0].save(filenameRef+".tmp.png")
     # os.replace(filenameRef+".tmp.png", filenameRef) # save then rename to avoid partially-written files
 
