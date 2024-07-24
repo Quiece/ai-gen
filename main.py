@@ -6,70 +6,76 @@ from random import choice, randint
 def prompt_cleanup(LLT_description):
     """ LLT provides a somewhat excesively detailed description. This function will first split it in the relevant
       paragraphs (each is properly titled in LLT) and then in their corresponding sentences. We will keep the first 1 or 2"""
+    try:
+        llt1 = LLT_description.split("\n")
+        keys = []
+        for n, i in enumerate(llt1):
+            # print(n)
+            if len(i) < 15:
+                keys.append(n)
+                # print(i)
+        # make a dict with the extracted keywords as keys
+        descrip_dict = {}
+        for n, i in enumerate(keys):
+            if n < len(keys)-1:
+                descrip_dict[llt1[i]] = llt1[i+1:keys[n+1]]
+            else:
+                descrip_dict[llt1[i]] = llt1[i+1:]
         
-    llt1 = LLT_description.split("\n")
-    keys = []
-    for n, i in enumerate(llt1):
-        # print(n)
-        if len(i) < 15:
-            keys.append(n)
-            # print(i)
-    # make a dict with the extracted keywords as keys
-    descrip_dict = {}
-    for n, i in enumerate(keys):
-        if n < len(keys)-1:
-            descrip_dict[llt1[i]] = llt1[i+1:keys[n+1]]
-        else:
-            descrip_dict[llt1[i]] = llt1[i+1:]
-    
 
-    clean_prompt_list = []
-    name = None
-    parsed_personality = False
-    for k, v in descrip_dict.items():
-        k = k.replace("\r", "")
-        if len(v) > 0:
-            v = v[0].replace("\u200b", "")
-            if k == "Personality": parsed_personality = True
-            if not parsed_personality: 
-                if len(k) > 0: name = k.replace(" ", "")
-                continue #skip all the relationships
-            
-            if k == "Mouth:":
-                sentences = v.split(".")
-                v = "".join(sentences[0:2])
-            elif k == "Tail:":
-                sentences = v.split(".")
-                v = "".join(sentences[0:1])
-            elif k == "Ass:":
-                sentences = v.split(".")
-                v = "".join(sentences[0])
-            elif k == "Vagina:":
-                # sentences = v.split(".")
-                # v = "".join(sentences[0])
-                v = ""
-                k = ""
-            elif k == "Overview:":
-                # print("overview")
-                parag = v.split(" ")
-                if name is None: name = parag[0] if len(parag[0]) > 2 else parag[1]
-                # print("------------------name: " + name)
-            clean_prompt_list.append("\n")
-            clean_prompt_list.append("\n")
-            clean_prompt_list.append(k)
-            clean_prompt_list.append("\n")
+        clean_prompt_list = []
+        name = None
+        parsed_personality = False
+        for k, v in descrip_dict.items():
+            k = k.replace("\r", "")
+            if len(v) > 0:
+                v = v[0].replace("\u200b", "")
+                if k == "Personality": parsed_personality = True
+                if not parsed_personality: 
+                    if len(k) > 0: name = k.replace(" ", "")
+                    continue #skip all the relationships
+                
+                if k == "Mouth:":
+                    sentences = v.split(".")
+                    v = "".join(sentences[0:2])
+                elif k == "Tail:":
+                    sentences = v.split(".")
+                    v = "".join(sentences[0:1])
+                elif k == "Ass:":
+                    sentences = v.split(".")
+                    v = "".join(sentences[0])
+                elif k == "Vagina:":
+                    # sentences = v.split(".")
+                    # v = "".join(sentences[0])
+                    v = ""
+                    k = ""
+                elif k == "Overview:":
+                    # print("overview")
+                    parag = v.split(" ")
+                    if name is None: name = parag[0] if len(parag[0]) > 2 else parag[1]
+                    # print("------------------name: " + name)
+                clean_prompt_list.append("\n")
+                clean_prompt_list.append("\n")
+                clean_prompt_list.append(k)
+                clean_prompt_list.append("\n")
+                # print("\n")
+                # print("\n")
+                # print(k)
+                # print("\n")
+                # print("\n")
+                clean_prompt_list.append(" ")
+                clean_prompt_list.append(v)
+                # print(v)
             # print("\n")
-            # print("\n")
-            # print(k)
-            # print("\n")
-            # print("\n")
-            clean_prompt_list.append(" ")
-            clean_prompt_list.append(v)
-            # print(v)
-        # print("\n")
+        
+        clean_prompt = "".join(clean_prompt_list)
+        # print(clean_prompt)
     
-    clean_prompt = "".join(clean_prompt_list)
-    # print(clean_prompt)
+    except Exception as e:
+        print(e)
+        clean_prompt = ""
+        name = None
+
     return (name, clean_prompt)
     
 def gen_name_if_necesary(_name, prompt):
@@ -114,6 +120,7 @@ if __name__ == "__main__":
         print(f"Clipboard data: {data}")
     win32clipboard.CloseClipboard()
     prompt = data
+
     name, prompt = prompt_cleanup(prompt)
     name = gen_name_if_necesary(name, prompt)
 
