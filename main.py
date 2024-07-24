@@ -72,7 +72,8 @@ def prompt_cleanup(LLT_description):
         # print(clean_prompt)
     
     except Exception as e:
-        print(e)
+        if debug: print(e)
+        print("There is probably nothing on the clipboard")
         clean_prompt = ""
         name = None
 
