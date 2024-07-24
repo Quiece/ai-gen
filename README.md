@@ -15,7 +15,7 @@ If you have any questions, begin your message with something that rhymes with "M
 
 + In-game; copy the npc's description. Preferably from the top, but as long as you catch what you consider relevant it shooould be fine.
 + Double click run.bat when you wanna generate something (it will use whatever is on your clipboard i.e. ctrl+c) 
-  + if that doesn't work for some reason,  try replacing line 112 `data = win32clipboard.GetClipboardData()` with `data=your stuff`
+  + if that doesn't work for some reason,  try replacing line 112 `data = win32clipboard.GetClipboardData()` with `data="your description *in quotes*"`. You may also be able to just put your desciption as the base prompt in the config, though if there's anythign on your clipboard that will still be added.
 + images will be generated on the savepath/generated with a semi-descriptive name. Add them to the character as you would any other image.
 
 ## Modify
