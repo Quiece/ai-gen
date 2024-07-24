@@ -25,6 +25,10 @@ On the config file you can:
 + Set the save path. By default, it saves wherever the script is, in /generated
 + Change the base prompt. This is added to the begining of all prompts.
 + Set worn clothes, if any.
-
 Anything else, such as changing how many images are generated (by default 2 sets of 4), what they are about etc you'll need to go into the code. It shouldn't be too hard unless you want soomething complex.
+
+## Further notes
+
+The way prompts work on Pixai, you can give soomething more weight by (enclosing it in parenthesis) you can also (add a weight:1.5).
+
 
