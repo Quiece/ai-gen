@@ -7,6 +7,8 @@ If you have any questions, begin your message with something that rhymes with "M
 + Download the zip file of the project and extract.
 + Once you have python, double click setup.bat; should install all dependencies. 
 + Peruse the code a bit, as well as pixai.art. You might want to change the models, loras, and base prompts. These can be set on the config.json file.
++ Make an acocount at ![Pixai](https://pixai.art/) and get an api key by going to your profile page and into debug mode (F12 on firefox):
+![](https://github.com/Quiece/ai-gen/blob/main/howToGetToken.png?raw=true)
 
 ## Use
 
